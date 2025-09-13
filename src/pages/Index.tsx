@@ -1,9 +1,13 @@
 import { HealthDashboard } from "@/components/HealthDashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Settings, Menu } from "lucide-react";
+import { User, Settings, Menu, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user, signOut } = useAuth();
+  const firstName = user?.user_metadata?.first_name || 'Health Hero';
+
   return (
     <div className="min-h-screen bg-gradient-hero">
       {/* Header */}
@@ -29,6 +33,9 @@ const Index = () => {
               <Button variant="ghost" size="icon">
                 <User className="h-4 w-4" />
               </Button>
+              <Button variant="ghost" size="icon" onClick={signOut} title="Sign Out">
+                <LogOut className="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-4 w-4" />
               </Button>
@@ -44,11 +51,11 @@ const Index = () => {
           <CardContent className="p-8 text-center">
             <div className="text-6xl mb-4 animate-float">🎯</div>
             <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              Welcome to Health-o-Meter! 🥗
+              Welcome back, {firstName}! 🥗
             </h2>
             <p className="text-xl text-white/90 mb-6 max-w-2xl mx-auto">
-              Track your nutrition, charge your health batteries, and level up your wellness game! 
-              Turn healthy eating into an adventure with scores, streaks, and smart AI coaching.
+              Your health dashboard is ready! Check your battery levels, log today's meals, 
+              and keep building those healthy streaks! 💪✨
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
