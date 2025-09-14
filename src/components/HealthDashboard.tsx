@@ -1,10 +1,12 @@
 import { HealthBattery } from "./HealthBattery";
 import { HealthBadges } from "./HealthBadges";
 import { FoodLog } from "./FoodLog";
+import { FoodLogging } from "./FoodLogging";
 import { ConditionAlert } from "./ConditionAlert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus, Sparkles, Calendar, BarChart3 } from "lucide-react";
+import { useFoodLogs } from "@/hooks/useFoodLogs";
 
 interface HealthData {
   morning: number;
@@ -29,7 +31,16 @@ const mockHealthData: HealthData = {
 };
 
 export function HealthDashboard() {
-  const data = mockHealthData;
+  const { getDailyScore, getPeriodScore, getTodaysFoodLogs } = useFoodLogs();
+  const todayLogs = getTodaysFoodLogs();
+  
+  const data = {
+    ...mockHealthData,
+    morning: getPeriodScore('morning') || mockHealthData.morning,
+    afternoon: getPeriodScore('afternoon') || mockHealthData.afternoon,
+    night: getPeriodScore('evening') || mockHealthData.night,
+    daily: getDailyScore() || mockHealthData.daily,
+  };
 
   return (
     <div className="space-y-6">
@@ -75,32 +86,50 @@ export function HealthDashboard() {
       <HealthBadges badges={data.badges} streak={data.streak} />
 
       {/* Food Logging Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span>🍽️</span>
-              Today's Food Log
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FoodLog />
-            <Button className="w-full mt-4" size="lg">
-              <Plus className="w-4 h-4 mr-2" />
-              Log Your Next Meal
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <FoodLogging />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span>🍽️</span>
+                Today's Food Log
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FoodLog />
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Quick Stats */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span>📊</span>
-              Quick Stats
+              Daily & Weekly Scores
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <Button variant="outline" className="w-full justify-start">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Daily Score: {data.daily}% 
+              {todayLogs.length > 0 && (
+                <span className="ml-auto text-sm text-muted-foreground">
+                  {todayLogs.length} meals logged
+                </span>
+              )}
+            </Button>
+            
+            <Button variant="outline" className="w-full justify-start">
+              <Calendar className="w-4 h-4 mr-2" />
+              Weekly View 📈
+              <span className="ml-auto text-sm text-muted-foreground">
+                Coming soon!
+              </span>
+            </Button>
+            
             <div className="flex justify-between items-center p-3 bg-gradient-hero rounded-lg">
               <span className="font-medium">🔥 Streak</span>
               <span className="text-xl font-bold text-primary">{data.streak} days</span>
@@ -111,7 +140,10 @@ export function HealthDashboard() {
             </div>
             <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
               <span className="font-medium">⚡ Best Period</span>
-              <span className="text-lg font-semibold text-battery-high">Morning</span>
+              <span className="text-lg font-semibold text-battery-high">
+                {data.morning >= data.afternoon && data.morning >= data.night ? 'Morning' :
+                 data.afternoon >= data.night ? 'Afternoon' : 'Evening'}
+              </span>
             </div>
           </CardContent>
         </Card>
