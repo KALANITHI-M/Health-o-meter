@@ -50,28 +50,76 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      food_logs: {
         Row: {
           created_at: string
-          email: string | null
-          full_name: string | null
+          food_name: string
+          health_score: number | null
           id: string
-          updated_at: string
+          logged_at: string
+          meal_type: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          email?: string | null
-          full_name?: string | null
+          food_name: string
+          health_score?: number | null
           id?: string
-          updated_at?: string
+          logged_at?: string
+          meal_type: string
           user_id: string
         }
         Update: {
           created_at?: string
-          email?: string | null
-          full_name?: string | null
+          food_name?: string
+          health_score?: number | null
           id?: string
+          logged_at?: string
+          meal_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          current_streak: number | null
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          health_conditions: string[] | null
+          id: string
+          last_name: string | null
+          total_badges: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          current_streak?: number | null
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          health_conditions?: string[] | null
+          id?: string
+          last_name?: string | null
+          total_badges?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          current_streak?: number | null
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          health_conditions?: string[] | null
+          id?: string
+          last_name?: string | null
+          total_badges?: number | null
           updated_at?: string
           user_id?: string
         }
