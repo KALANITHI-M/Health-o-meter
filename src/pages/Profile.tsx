@@ -105,14 +105,14 @@ export function Profile() {
           weekly_target: profile.weekly_target,
           daily_meal_target: profile.daily_meal_target,
           full_name: `${profile.first_name} ${profile.last_name}`.trim()
-        });
+        }, { onConflict: 'user_id' });
 
       if (error) throw error;
 
       toast.success("✅ Profile updated successfully! 🎉");
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error("⚠️ Profile update failed — please retry 🔄");
+      toast.error("⚠️ Profile update failed — please try again 🔄");
     } finally {
       setSaving(false);
     }

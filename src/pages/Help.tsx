@@ -13,6 +13,8 @@ import {
   Target,
   Zap
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 
 export function Help() {
   const features = [
@@ -186,6 +188,67 @@ export function Help() {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Coaching */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            AI Coaching
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Type a food (e.g., burger, salad, soup)"
+              value={coachInput}
+              onChange={(e) => setCoachInput(e.target.value)}
+            />
+            <Button
+              onClick={async () => {
+                setCoachOutput(null);
+                setCoachLoading(true);
+                try {
+                  const text = coachInput.trim().toLowerCase();
+                  if (!text) {
+                    setCoachOutput("Please enter a food to get coaching ✨");
+                  } else {
+                    const unhealthy = ["pizza","burger","fries","candy","soda","ice cream","cake","chips","donut","cookies"];
+                    const healthyAlts: Record<string,string> = {
+                      burger: "Try a grilled chicken wrap or a bean burger 🫘",
+                      pizza: "Go for a veggie flatbread with thin crust 🥦",
+                      fries: "Swap to baked sweet potato wedges 🍠",
+                      candy: "Choose a handful of berries or nuts 🍓🥜",
+                      soda: "Try sparkling water with lemon 🍋",
+                      "ice cream": "Yogurt with fruit is a tasty swap 🍨➡️🥣",
+                      cake: "Fruit salad with dark chocolate shavings 🍫🍓",
+                      chips: "Crunch on carrots or air-popped popcorn 🥕🍿",
+                      donut: "Whole-grain toast with nut butter 🥜🍞",
+                      cookies: "Oat cookies with less sugar or an apple 🍎",
+                    };
+                    if (unhealthy.some((u) => text.includes(u))) {
+                      const key = unhealthy.find((u) => text.includes(u))!;
+                      setCoachOutput(`⚠️ That might drain your battery. ${healthyAlts[key]}`);
+                    } else {
+                      setCoachOutput("✅ Nice choice! Keep it balanced with veggies and protein 💪");
+                    }
+                  }
+                } catch (e) {
+                  setCoachOutput("⚠️ Coaching not available right now, please retry 🔄.");
+                } finally {
+                  setCoachLoading(false);
+                }
+              }}
+              disabled={coachLoading}
+            >
+              {coachLoading ? "Thinking..." : "Get Coaching"}
+            </Button>
+          </div>
+          {coachOutput && (
+            <div className="p-3 bg-muted/50 rounded-lg text-sm">{coachOutput}</div>
+          )}
         </CardContent>
       </Card>
 

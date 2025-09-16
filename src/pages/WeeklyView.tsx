@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar } from "l
 import { useFoodLogs } from "@/hooks/useFoodLogs";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { LineChart, Line, XAxis, CartesianGrid, Tooltip } from "recharts";
 
 export function WeeklyView() {
   const { foodLogs, loading } = useFoodLogs();
@@ -42,7 +44,12 @@ export function WeeklyView() {
   
   const weekData = getWeekData(weekOffset);
   const currentWeekData = getWeekData(0);
-  const lastWeekData = getWeekData(-1);
+const lastWeekData = getWeekData(-1);
+
+  const chartData = weekData.map((d) => ({
+    day: d.date.toLocaleDateString('en-US', { weekday: 'short' }),
+    score: d.score,
+  }));
   
   const weekAverage = Math.round(
     weekData.reduce((sum, day) => sum + day.score, 0) / 7
@@ -200,6 +207,26 @@ export function WeeklyView() {
           </Card>
         </div>
       )}
+
+      {/* Weekly Trend Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Weekly Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer
+            config={{ score: { label: "Score", color: "hsl(var(--primary))" } }}
+            className="w-full"
+          >
+            <LineChart data={chartData} margin={{ left: 8, right: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" />
+              <Tooltip content={<ChartTooltipContent />} />
+              <Line type="monotone" dataKey="score" stroke="var(--color-score)" strokeWidth={2} dot />
+            </LineChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
 
       {/* Daily Breakdown */}
       <Card>

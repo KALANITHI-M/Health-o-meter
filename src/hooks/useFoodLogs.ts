@@ -74,10 +74,13 @@ export function useFoodLogs() {
       
       const emoji = healthScore >= 70 ? '🔋⚡' : healthScore >= 50 ? '⚡' : '⚠️';
       toast.success(`${foodName} logged! ${emoji} ${healthScore >= 70 ? '+' : ''}${healthScore - 50}% health impact`);
+
+      // Notify other hook instances to refresh
+      window.dispatchEvent(new CustomEvent('foodlogs:updated'));
       
       return { success: true, healthScore };
     } catch (error) {
-      toast.error('Failed to log food. Try again! 🔄');
+      toast.error('⚠️ Failed to log food, please try again 🔄.');
       return { success: false, error };
     }
   };

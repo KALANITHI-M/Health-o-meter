@@ -126,7 +126,7 @@ export function HealthDashboard() {
               <Calendar className="w-4 h-4 mr-2" />
               Weekly View 📈
               <span className="ml-auto text-sm text-muted-foreground">
-                Coming soon!
+                Open via navbar
               </span>
             </Button>
             
