@@ -68,9 +68,9 @@ export function Profile() {
           last_name: data.last_name || "",
           email: data.email || user.email || "",
           health_conditions: data.health_conditions || [],
-          dietary_goals: data.dietary_goals || "",
-          weekly_target: data.weekly_target || 70,
-          daily_meal_target: data.daily_meal_target || 3
+          dietary_goals: (data as any).dietary_goals || "",
+          weekly_target: (data as any).weekly_target || 70,
+          daily_meal_target: (data as any).daily_meal_target || 3
         });
       } else {
         // Set defaults from user metadata

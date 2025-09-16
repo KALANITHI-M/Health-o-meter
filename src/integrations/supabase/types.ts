@@ -85,6 +85,8 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           current_streak: number | null
+          daily_meal_target: number | null
+          dietary_goals: string | null
           email: string | null
           first_name: string | null
           full_name: string | null
@@ -94,11 +96,14 @@ export type Database = {
           total_badges: number | null
           updated_at: string
           user_id: string
+          weekly_target: number | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           current_streak?: number | null
+          daily_meal_target?: number | null
+          dietary_goals?: string | null
           email?: string | null
           first_name?: string | null
           full_name?: string | null
@@ -108,11 +113,14 @@ export type Database = {
           total_badges?: number | null
           updated_at?: string
           user_id: string
+          weekly_target?: number | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           current_streak?: number | null
+          daily_meal_target?: number | null
+          dietary_goals?: string | null
           email?: string | null
           first_name?: string | null
           full_name?: string | null
@@ -122,6 +130,7 @@ export type Database = {
           total_badges?: number | null
           updated_at?: string
           user_id?: string
+          weekly_target?: number | null
         }
         Relationships: []
       }
