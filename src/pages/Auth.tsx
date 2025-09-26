@@ -29,9 +29,15 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
-        await signUp(email, password, firstName);
+        const result = await signUp(email, password, firstName);
+        if (!result.error) {
+          navigate('/onboarding');
+        }
       } else {
-        await signIn(email, password);
+        const result = await signIn(email, password);
+        if (!result.error) {
+          navigate('/');
+        }
       }
     } finally {
       setIsLoading(false);
@@ -110,7 +116,7 @@ export default function Auth() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Create a strong password 🔒"
+                  placeholder="Enter your password 🔒"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

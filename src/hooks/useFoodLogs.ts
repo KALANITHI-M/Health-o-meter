@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { foodLogAPI } from '@/lib/api';
 
 export interface FoodItem {
   id?: string;
@@ -17,14 +17,36 @@ export function useFoodLogs() {
   const { user } = useAuth();
 
   const calculateHealthScore = (foodName: string): number => {
-    const healthyFoods = [
-      'salad', 'fruit', 'vegetable', 'nuts', 'yogurt', 'fish', 'chicken', 'quinoa', 'oats', 'smoothie',
-      'apple', 'banana', 'broccoli', 'spinach', 'kale', 'avocado', 'berries', 'salmon', 'tuna'
-    ];
-    
-    const unhealthyFoods = [
-      'pizza', 'burger', 'fries', 'candy', 'soda', 'ice cream', 'cake', 'chips', 'donut', 'cookies'
-    ];
+ const healthyFoods = [
+  // Existing
+  'salad', 'fruit', 'vegetable', 'nuts', 'yogurt', 'fish', 'chicken', 'quinoa', 'oats', 'smoothie',
+  'apple', 'banana', 'broccoli', 'spinach', 'kale', 'avocado', 'berries', 'salmon', 'tuna',
+
+  // Indian healthy foods
+  'idli', 'dosa', 'upma', 'poha', 'dal', 'sambar', 'rasam', 'roti', 'chapati',
+  'brown rice', 'curd', 'buttermilk', 'sprouts', 'moong dal', 'rajma', 'chole', 'green gram', 'millets',
+  'ragi', 'bajra', 'jowar', 'khichdi', 'vegetable pulao', 'lemon rice', 'cabbage curry', 'palak paneer',
+  'bhindi', 'lauki', 'tinda', 'methi thepla', 'handvo', 'undhiyu',
+
+  // Global extras
+  'boiled egg', 'grilled chicken', 'tofu', 'paneer', 'mushrooms', 'lentil soup', 'vegetable soup',
+  'hummus', 'chickpeas', 'edamame', 'brown bread', 'whole wheat pasta', 'sweet potato'
+];
+
+const unhealthyFoods = [
+  // Existing
+  'pizza', 'burger', 'fries', 'candy', 'soda', 'ice cream', 'cake', 'chips', 'donut', 'cookies',
+
+  // Indian unhealthy foods
+  'samosa', 'kachori', 'pakora', 'jalebi', 'gulab jamun', 'rasgulla', 'laddu', 'barfi', 'pav bhaji',
+  'vada pav', 'pani puri', 'sev puri', 'bhel puri', 'chole bhature', 'naan with butter', 'paratha',
+  'malai kofta', 'paneer butter masala', 'butter chicken', 'fried rice', 'chowmein ', 
+  'puri', 'halwa', 'mysore pak',
+
+  // Global extras
+  'hotdog', 'fried chicken', 'nachos', 'tacos (fried)', 'milkshake', 'energy drink', 'alcohol', 'processed meat',
+  'cheese burst pizza', 'deep fried snacks', 'popcorn (buttery)', 'chocolate bar'
+];
 
     const name = foodName.toLowerCase();
     
@@ -51,17 +73,7 @@ export function useFoodLogs() {
     const healthScore = calculateHealthScore(foodName);
     
     try {
-      const { error } = await supabase
-        .from('food_logs')
-        .insert({
-          user_id: user.id,
-          food_name: foodName,
-          meal_type: meal,
-          health_score: healthScore,
-          logged_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
+      await foodLogAPI.create(foodName, meal, healthScore);
 
       const newFood: FoodItem = {
         name: foodName,
@@ -116,23 +128,8 @@ export function useFoodLogs() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('food_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('logged_at', { ascending: false });
-
-      if (error) throw error;
-      
-      const mappedData = (data || []).map(item => ({
-        id: item.id,
-        name: item.food_name,
-        meal_type: item.meal_type as 'morning' | 'afternoon' | 'evening',
-        health_score: item.health_score,
-        logged_at: item.logged_at
-      }));
-      
-      setFoodLogs(mappedData);
+      const response = await foodLogAPI.getAll();
+      setFoodLogs(response.data);
     } catch (error) {
       console.error('Error fetching food logs:', error);
     } finally {
@@ -142,6 +139,16 @@ export function useFoodLogs() {
 
   useEffect(() => {
     fetchFoodLogs();
+  }, [user]);
+
+  // Listen for food logs updates and refresh
+  useEffect(() => {
+    const handleFoodLogsUpdate = () => {
+      fetchFoodLogs();
+    };
+    
+    window.addEventListener('foodlogs:updated', handleFoodLogsUpdate);
+    return () => window.removeEventListener('foodlogs:updated', handleFoodLogsUpdate);
   }, [user]);
 
   return {

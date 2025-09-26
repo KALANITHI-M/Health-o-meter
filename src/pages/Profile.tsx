@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Save, User, Heart, Target, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { profileAPI } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useFoodLogs } from "@/hooks/useFoodLogs";
@@ -51,36 +51,17 @@ export function Profile() {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      if (data) {
-        setProfile({
-          first_name: data.first_name || "",
-          last_name: data.last_name || "",
-          email: data.email || user.email || "",
-          health_conditions: data.health_conditions || [],
-          dietary_goals: (data as any).dietary_goals || "",
-          weekly_target: (data as any).weekly_target || 70,
-          daily_meal_target: (data as any).daily_meal_target || 3
-        });
-      } else {
-        // Set defaults from user metadata
-        setProfile(prev => ({
-          ...prev,
-          first_name: user.user_metadata?.first_name || "",
-          last_name: user.user_metadata?.last_name || "",
-          email: user.email || ""
-        }));
-      }
+      const response = await profileAPI.get();
+      const data = response.data;
+      setProfile({
+        first_name: data.user_metadata?.first_name || user.firstName || "",
+        last_name: data.user_metadata?.last_name || user.lastName || "",
+        email: user.email || "",
+        health_conditions: data.health_conditions || [],
+        dietary_goals: data.dietary_goals || "",
+        weekly_target: data.weekly_target ?? 70,
+        daily_meal_target: data.daily_meal_target ?? 3
+      });
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -93,21 +74,16 @@ export function Profile() {
     
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
+      await profileAPI.update({
+        user_metadata: {
           first_name: profile.first_name,
-          last_name: profile.last_name,
-          email: profile.email,
-          health_conditions: profile.health_conditions,
-          dietary_goals: profile.dietary_goals,
-          weekly_target: profile.weekly_target,
-          daily_meal_target: profile.daily_meal_target,
-          full_name: `${profile.first_name} ${profile.last_name}`.trim()
-        }, { onConflict: 'user_id' });
-
-      if (error) throw error;
+          last_name: profile.last_name
+        },
+        health_conditions: profile.health_conditions,
+        dietary_goals: profile.dietary_goals,
+        weekly_target: profile.weekly_target,
+        daily_meal_target: profile.daily_meal_target
+      } as any);
 
       toast.success("✅ Profile updated successfully! 🎉");
     } catch (error) {

@@ -1,12 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { authAPI, type User as APIUser } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  signUp: (email: string, password: string, firstName?: string) => Promise<{ error: any }>;
+  user: APIUser | null;
+  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   loading: boolean;
@@ -15,110 +13,88 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<APIUser | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        // Health-o-Meter AI companion messages
-        if (event === 'SIGNED_IN' && session?.user) {
-          const firstName = session.user.user_metadata?.first_name || 'Health Hero';
+    // Check for existing token and validate it
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      // Validate token by fetching current user
+      authAPI.getCurrentUser()
+        .then((response) => {
+          setUser(response.data.user);
+          // Welcome message
+          const firstName = response.data.user.firstName || 'Health Hero';
           toast({
             title: `Welcome back, ${firstName}! 💚`,
             description: "Let's charge your health battery today! ⚡🥗",
           });
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+        })
+        .catch(() => {
+          // Token invalid, remove it
+          localStorage.removeItem('authToken');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
       setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, [toast]);
 
-  const signUp = async (email: string, password: string, firstName?: string) => {
+  const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            first_name: firstName,
-          }
-        }
+      const response = await authAPI.register(email, password, firstName || '', lastName);
+
+      // Store token
+      localStorage.setItem('authToken', response.data.token);
+      setUser(response.data.user);
+
+      toast({
+        title: `Yay 🎉 Welcome to Health-o-Meter, ${firstName || 'Health Hero'}!`,
+        description: "Your wellness journey starts here 🌱",
       });
 
-      if (error) {
-        toast({
-          title: "⚠️ Hmm, signup hiccup!",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: `Yay 🎉 Welcome to Health-o-Meter, ${firstName || 'Health Hero'}!`,
-          description: "Your wellness journey starts here 🌱 Check your email to verify your account!",
-        });
-      }
-
-      return { error };
+      return { error: null };
     } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Something went wrong';
       toast({
-        title: "⚠️ Oops, something went wrong!",
-        description: "Try refreshing the page 🔄 and try again.",
+        title: "⚠️ Hmm, signup hiccup!",
+        description: errorMessage,
         variant: "destructive",
       });
-      return { error };
+      return { error: errorMessage };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const response = await authAPI.login(email, password);
 
-      if (error) {
-        toast({
-          title: "⚠️ Login trouble!",
-          description: error.message === 'Invalid login credentials' 
-            ? "Hmm, those credentials don't look right 🤔 Double-check and try again!"
-            : error.message,
-          variant: "destructive",
-        });
-      }
+      // Store token
+      localStorage.setItem('authToken', response.data.token);
+      setUser(response.data.user);
 
-      return { error };
+      return { error: null };
     } catch (error: any) {
+      const errorMessage = error.response?.data?.error || 'Connection issue';
       toast({
-        title: "⚠️ Oops, connection issue!",
-        description: "Try refreshing the page 🔄 and try again.",
+        title: "⚠️ Login trouble!",
+        description: errorMessage === 'Invalid credentials'
+          ? "Hmm, those credentials don't look right 🤔 Double-check and try again!"
+          : errorMessage,
         variant: "destructive",
       });
-      return { error };
+      return { error: errorMessage };
     }
   };
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      localStorage.removeItem('authToken');
+      setUser(null);
       toast({
         title: "👋 See you soon!",
         description: "Keep up the healthy habits! Your progress is saved 💪",
@@ -135,7 +111,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user,
-      session,
       signUp,
       signIn,
       signOut,

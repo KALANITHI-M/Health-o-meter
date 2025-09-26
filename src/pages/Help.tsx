@@ -14,9 +14,128 @@ import {
   Zap
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "@/hooks/use-toast";
+
+// Set a fixed API URL for the Gemini AI Flask server
+const FLASK_API_URL = 'http://localhost:5050';
+// Original API URL for non-AI endpoints
+const EXPRESS_API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 export function Help() {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [coachInput, setCoachInput] = useState("");
+  const [coachOutput, setCoachOutput] = useState<string | null>(null);
+  const [coachLoading, setCoachLoading] = useState(false);
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    setIsAuthenticated(!!token);
+  }, []);
+
+  // Helper function to generate offline responses
+  const getOfflineResponse = (query: string): string => {
+    const text = query.toLowerCase();
+    
+    // Check if it's a food item or a question
+    const isQuestion = text.includes("?") || 
+      /^(how|what|when|why|where|can|should|is|are|do|does)/i.test(text);
+
+    if (isQuestion) {
+      // Handle questions based on keywords
+      if (text.includes("water") || text.includes("hydration")) {
+        return "💧 For optimal hydration, aim to drink about 8-10 cups (2-2.5 liters) of water daily. Your specific needs may vary based on activity level, climate, and body size.";
+      } else if (text.includes("breakfast") || (text.includes("morning") && text.includes("food"))) {
+        return "🍳 Great breakfast options include: whole grain toast with avocado and eggs, Greek yogurt with berries and nuts, overnight oats with fruit, or a vegetable and protein smoothie.";
+      } else if (text.includes("energy") || text.includes("tired")) {
+        return "⚡ To boost your energy naturally: 1) Stay hydrated, 2) Eat balanced meals with protein, 3) Get 7-9 hours of sleep, 4) Take short movement breaks, 5) Consider a B-vitamin complex if deficient.";
+      } else if (text.includes("snack")) {
+        return "🥜 Healthy snack ideas: Greek yogurt with berries, apple slices with nut butter, hummus with veggie sticks, mixed nuts, edamame, hard-boiled eggs, or a small smoothie.";
+      } else {
+        // Generic response
+        return "That's a great health question! Based on general principles, focus on whole foods, stay hydrated, get regular activity, and prioritize sleep.";
+      }
+    } else {
+      // Food evaluation logic
+      const unhealthy = ["pizza","burger","fries","candy","soda","ice cream","cake","chips","donut","cookies"];
+      if (unhealthy.some((u) => text.includes(u))) {
+        return "⚠️ This food might drain your health battery. Consider a more nutrient-dense option like vegetables, lean proteins, or whole grains.";
+      } else if (["fruit", "vegetable", "vegetables", "salad", "fish", "chicken", "beans", "lentils", "nuts", "yogurt", "oats", "tofu"].some(h => text.includes(h))) {
+        return "✅ Excellent choice! This is a nutritious option that will help charge your health battery.";
+      } else {
+        return "✅ That seems like a reasonable food choice! For optimal nutrition, include a variety of colorful vegetables, lean proteins, and whole grains.";
+      }
+    }
+  };
+
+ const handleAiQuery = async () => {
+  setCoachLoading(true);
+  setCoachOutput(null);
+  
+  try {
+    const text = coachInput.trim();
+    if (!text) {
+      setCoachOutput("Please enter a question or food to get advice ✨");
+      return;
+    }
+
+    // Get token for authentication
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to use the AI assistant",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      console.log('🔍 Help: Calling Gemini AI via Flask server');
+      
+      const response = await fetch('http://localhost:5050/api/ai/health-advice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          query: text,
+          type: 'general' // Add type for proper processing
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('🔍 Help: AI Response received:', data);
+
+      // Fix: Use data.response instead of data.text
+      if (data && data.response) {
+        setCoachOutput(data.response);
+      } else {
+        setCoachOutput("I couldn't generate advice for that query. Try being more specific or asking something else!");
+      }
+      
+    } catch (apiError) {
+      console.error("API error:", apiError);
+      // Fallback to offline mode if API fails
+      console.log("Using offline response mode");
+      setCoachOutput(getOfflineResponse(text));
+    }
+  } catch (error) {
+    console.error("General error:", error);
+    setCoachOutput("⚠️ Something went wrong. Please try again later.");
+  } finally {
+    setCoachLoading(false);
+  }
+};
   const features = [
     {
       icon: Battery,
@@ -196,58 +315,91 @@ export function Help() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            AI Coaching
+            AI Health Assistant
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Type a food (e.g., burger, salad, soup)"
-              value={coachInput}
-              onChange={(e) => setCoachInput(e.target.value)}
-            />
-            <Button
-              onClick={async () => {
-                setCoachOutput(null);
-                setCoachLoading(true);
-                try {
-                  const text = coachInput.trim().toLowerCase();
-                  if (!text) {
-                    setCoachOutput("Please enter a food to get coaching ✨");
-                  } else {
-                    const unhealthy = ["pizza","burger","fries","candy","soda","ice cream","cake","chips","donut","cookies"];
-                    const healthyAlts: Record<string,string> = {
-                      burger: "Try a grilled chicken wrap or a bean burger 🫘",
-                      pizza: "Go for a veggie flatbread with thin crust 🥦",
-                      fries: "Swap to baked sweet potato wedges 🍠",
-                      candy: "Choose a handful of berries or nuts 🍓🥜",
-                      soda: "Try sparkling water with lemon 🍋",
-                      "ice cream": "Yogurt with fruit is a tasty swap 🍨➡️🥣",
-                      cake: "Fruit salad with dark chocolate shavings 🍫🍓",
-                      chips: "Crunch on carrots or air-popped popcorn 🥕🍿",
-                      donut: "Whole-grain toast with nut butter 🥜🍞",
-                      cookies: "Oat cookies with less sugar or an apple 🍎",
-                    };
-                    if (unhealthy.some((u) => text.includes(u))) {
-                      const key = unhealthy.find((u) => text.includes(u))!;
-                      setCoachOutput(`⚠️ That might drain your battery. ${healthyAlts[key]}`);
-                    } else {
-                      setCoachOutput("✅ Nice choice! Keep it balanced with veggies and protein 💪");
-                    }
-                  }
-                } catch (e) {
-                  setCoachOutput("⚠️ Coaching not available right now, please retry 🔄.");
-                } finally {
-                  setCoachLoading(false);
-                }
-              }}
-              disabled={coachLoading}
-            >
-              {coachLoading ? "Thinking..." : "Get Coaching"}
-            </Button>
-          </div>
-          {coachOutput && (
-            <div className="p-3 bg-muted/50 rounded-lg text-sm">{coachOutput}</div>
+          {isAuthenticated === false ? (
+            <div className="p-4 bg-muted/50 rounded-lg text-center">
+              <div className="text-3xl mb-3">🔒</div>
+              <h3 className="font-medium mb-2">Sign in to use AI Health Assistant</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get personalized health advice and food recommendations powered by Gemini AI
+              </p>
+              <Button onClick={() => navigate('/auth')}>
+                Sign in to continue
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">Ask about foods, health advice, or get suggestions:</p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ask a question or enter a food (e.g., Is pizza healthy? What should I eat?)"
+                    value={coachInput}
+                    onChange={(e) => setCoachInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !coachLoading) {
+                        handleAiQuery();
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleAiQuery}
+                    disabled={coachLoading}
+                  >
+                    {coachLoading ? "Thinking..." : "Ask AI"}
+                  </Button>
+                </div>
+              </div>
+              {coachLoading && (
+                <div className="flex justify-center py-8">
+                  <div className="animate-pulse flex items-center gap-2">
+                    <div className="text-xl">🤖</div>
+                    <p>Thinking...</p>
+                  </div>
+                </div>
+              )}
+              {coachOutput && !coachLoading && (
+                <div className="p-4 bg-muted/50 rounded-lg text-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="text-xl mt-0.5">🤖</div>
+                    <div>{coachOutput}</div>
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-muted transition-colors"
+                  onClick={() => setCoachInput("What are good breakfast options?")}
+                >
+                  Breakfast ideas
+                </Badge>
+                <Badge 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-muted transition-colors"
+                  onClick={() => setCoachInput("How can I improve my energy levels?")}
+                >
+                  Energy tips
+                </Badge>
+                <Badge 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-muted transition-colors"
+                  onClick={() => setCoachInput("What snacks are healthy?")}
+                >
+                  Healthy snacks
+                </Badge>
+                <Badge 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-muted transition-colors"
+                  onClick={() => setCoachInput("How much water should I drink?")}
+                >
+                  Water intake
+                </Badge>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -361,7 +513,11 @@ export function Help() {
           <p className="text-muted-foreground mb-4">
             Your Health-o-Meter AI is always here to support your wellness journey!
           </p>
-          <Button size="lg" className="bg-gradient-health text-white border-0">
+          <Button 
+            size="lg" 
+            className="bg-gradient-health text-white border-0"
+            onClick={() => navigate('/')}
+          >
             <Sparkles className="h-4 w-4 mr-2" />
             🚀 Start Your Health Journey
           </Button>

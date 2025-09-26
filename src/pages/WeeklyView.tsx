@@ -214,17 +214,19 @@ const lastWeekData = getWeekData(-1);
           <CardTitle>Weekly Trend</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer
-            config={{ score: { label: "Score", color: "hsl(var(--primary))" } }}
-            className="w-full"
-          >
-            <LineChart data={chartData} margin={{ left: 8, right: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" />
-              <Tooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="score" stroke="var(--color-score)" strokeWidth={2} dot />
-            </LineChart>
-          </ChartContainer>
+          <div className="flex justify-center">
+            <ChartContainer
+              config={{ score: { label: "Score", color: "hsl(var(--primary))" } }}
+              className="w-full max-w-2xl h-64"
+            >
+              <LineChart data={chartData} margin={{ left: 8, right: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <Tooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="score" stroke="var(--color-score)" strokeWidth={2} dot />
+              </LineChart>
+            </ChartContainer>
+          </div>
         </CardContent>
       </Card>
 

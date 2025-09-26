@@ -1,0 +1,7 @@
+flask==3.0.3
+flask-cors==4.0.0
+python-dotenv==1.0.0
+google-generativeai==0.3.2
+protobuf==4.21.12
+mysql-connector-python==8.1.0
+flask-pymongo==3.0.1

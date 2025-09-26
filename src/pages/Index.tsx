@@ -1,21 +1,28 @@
-import { Navigation } from "@/components/Navigation";
+import { SideNavigation } from "@/components/SideNavigation";
 import { HealthDashboard } from "@/components/HealthDashboard";
+import { MealAnalyzer } from "@/components/MealAnalyzer";
 import { WeeklyView } from "./WeeklyView";
 import { Profile } from "./Profile";
 import { Help } from "./Help";
 import { AchievementsBadges } from "./AchievementsBadges";
+import Leaderboard from "@/components/Leaderboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { useFoodLogs } from "@/hooks/useFoodLogs";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const { user } = useAuth();
   const { getTodaysFoodLogs, getDailyScore } = useFoodLogs();
   const [activeTab, setActiveTab] = useState('daily');
+  const isMobile = useIsMobile();
   
-  const firstName = user?.user_metadata?.first_name || 'Health Hero';
+  const firstName = user?.firstName || 'Health Hero';
+  const fullName = user?.firstName && user?.lastName 
+    ? `${user.firstName} ${user.lastName}` 
+    : user?.firstName || 'Health Hero';
   const todayLogs = getTodaysFoodLogs();
   const dailyScore = getDailyScore();
 
@@ -30,7 +37,7 @@ const Index = () => {
                 <CardContent className="p-8 text-center">
                   <div className="text-6xl mb-4 animate-float">🎯</div>
                   <h2 className="text-3xl md:text-4xl font-bold mb-3">
-                    Welcome back, {firstName}! 🥗
+                    Welcome back, {fullName}! 🥗
                   </h2>
                   <p className="text-xl text-white/90 mb-6 max-w-2xl mx-auto">
                     Your health dashboard is ready! Check your battery levels, log today's meals, 
@@ -93,10 +100,14 @@ const Index = () => {
             )}
           </div>
         );
+      case 'meal-analyzer':
+        return <MealAnalyzer />;
       case 'weekly':
         return <WeeklyView />;
       case 'achievements':
         return <AchievementsBadges />;
+      case 'leaderboard':
+        return <Leaderboard />;
       case 'profile':
         return <Profile />;
       case 'help':
@@ -108,10 +119,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-hero">
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <SideNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       
-      <main className="container mx-auto px-4 py-6">
-        {renderTabContent()}
+      {/* Main content with proper spacing for sidebar */}
+      <main className={`transition-all duration-300 ${
+        isMobile 
+          ? 'pt-16 px-4 py-6' // Mobile: account for header
+          : 'ml-64 px-6 py-6' // Desktop: account for sidebar
+      }`}>
+        <div className="container mx-auto">
+          {renderTabContent()}
+        </div>
       </main>
     </div>
   );
