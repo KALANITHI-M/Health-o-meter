@@ -7,6 +7,7 @@ import { Plus, Clock, Utensils, Camera, Upload, X, Loader2 } from 'lucide-react'
 import { useFoodLogs } from '@/hooks/useFoodLogs';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { VoiceRecognition } from './VoiceRecognition';
 
 export function FoodLogging() {
   const [foodInput, setFoodInput] = useState('');
@@ -15,6 +16,7 @@ export function FoodLogging() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isListening, setIsListening] = useState(false);
   const { logFood, getCurrentMealType, hasPeriodLogs } = useFoodLogs();
 
   // Gemini API key
@@ -62,6 +64,14 @@ export function FoodLogging() {
     if (hasLogged) return { text: 'Logged ✅', variant: 'default' as const };
     if (isActive) return { text: 'Log Now! ⚡', variant: 'default' as const };
     return { text: 'Not Time Yet ⏰', variant: 'secondary' as const };
+  };
+
+  const handleVoiceResult = (result: { transcript: string; mealType: 'morning' | 'afternoon' | 'evening' | null }) => {
+    setFoodInput(result.transcript);
+    if (result.mealType) {
+      setSelectedMeal(result.mealType);
+    }
+    setIsListening(false);
   };
 
   const handleLogFood = async () => {
@@ -310,16 +320,23 @@ export function FoodLogging() {
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Input
-                placeholder="🍎 Enter food name or capture image..."
+                placeholder="🍎 Enter food name, use voice, or capture image..."
                 value={foodInput}
                 onChange={(e) => setFoodInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleLogFood()}
-                className="pr-20"
-                disabled={isAnalyzing}
+                className="pr-28"
+                disabled={isAnalyzing || isListening}
               />
               
-              {/* Image Capture Buttons */}
-              <div className="absolute right-1 top-1 flex gap-1">
+              {/* Voice Recognition and Image Capture Buttons */}
+              <div className="absolute right-1 top-1 flex items-center gap-1">
+                <VoiceRecognition
+                  onResult={handleVoiceResult}
+                  isListening={isListening}
+                  setIsListening={setIsListening}
+                  disabled={isAnalyzing}
+                />
+                
                 <input
                   type="file"
                   id="food-image-upload"
@@ -334,7 +351,7 @@ export function FoodLogging() {
                     variant="ghost" 
                     size="sm"
                     className="h-8 w-8 p-0"
-                    disabled={isAnalyzing}
+                    disabled={isAnalyzing || isListening}
                     asChild
                   >
                     <span>
@@ -352,7 +369,7 @@ export function FoodLogging() {
                   variant="ghost" 
                   size="sm"
                   className="h-8 w-8 p-0"
-                  disabled={isAnalyzing || showImageCapture}
+                  disabled={isAnalyzing || showImageCapture || isListening}
                 >
                   <Camera className="w-4 h-4" />
                 </Button>
@@ -361,7 +378,7 @@ export function FoodLogging() {
             
             <Button 
               onClick={handleLogFood}
-              disabled={!foodInput.trim() || isAnalyzing}
+              disabled={!foodInput.trim() || isAnalyzing || isListening}
               size="sm"
             >
               <Plus className="w-4 h-4" />
@@ -380,7 +397,7 @@ export function FoodLogging() {
 
         {/* Tips */}
         <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-          💡 <strong>Pro tip:</strong> Morning button works 6AM-12PM, Afternoon 12PM-5PM, Evening after 5PM. 
+          💡 <strong>Pro tip:</strong> Use voice (🎤), camera (📷), or type manually! Morning button works 6AM-12PM, Afternoon 12PM-5PM, Evening after 5PM. 
           Buttons turn off after logging! You can always override by selecting a different meal time.
         </div>
       </CardContent>

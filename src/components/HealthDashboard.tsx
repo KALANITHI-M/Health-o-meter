@@ -216,25 +216,32 @@ export function HealthDashboard() {
           <CardContent className="space-y-4">
             <HydrationTracker />
             <QuickActions />
-            <Button variant="outline" className="w-full justify-start">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Daily Score: {data.daily}% 
-              <span className="ml-2 text-xs text-muted-foreground">
-                • {userPointsData.totalPoints} pts
-              </span>
-              {todayLogs.length > 0 && (
-                <span className="ml-auto text-sm text-muted-foreground">
-                  {todayLogs.length} meals logged
-                </span>
-              )}
+            <Button variant="outline" className="w-full">
+              <div className="flex items-center justify-between w-full gap-4">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="font-medium">Daily Score: {data.daily}%</span>
+                  <span className="text-xs text-muted-foreground">
+                    • {userPointsData.totalPoints} pts
+                  </span>
+                </div>
+                {todayLogs.length > 0 && (
+                  <span className="text-sm text-muted-foreground text-right flex-shrink-0">
+                    {todayLogs.length} meals logged
+                  </span>
+                )}
+              </div>
             </Button>
             
-            <Button variant="outline" className="w-full justify-start">
-              <Calendar className="w-4 h-4 mr-2" />
-              Weekly Average: {data.weeklyAverage}%
-              <span className="ml-auto text-sm text-muted-foreground">
-                Based on daily trends
-              </span>
+            <Button variant="outline" className="w-full">
+              <div className="flex items-center justify-between w-full gap-4">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Calendar className="w-4 h-4" />
+                  <span className="font-medium">Weekly Average: {data.weeklyAverage}%</span>
+                </div>
+                
+      
+              </div>
             </Button>
             
             <div className="flex justify-between items-center p-3 bg-gradient-hero rounded-lg">
